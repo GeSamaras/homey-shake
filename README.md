@@ -1,6 +1,6 @@
 # homey-shake
 
-This repo helps you quickly set up a fresh Linux install (Fedora KDE and Mint tested) for development, media, and homelab tinkering. It uses a mix of bash scripts and Docker to get everything installed and configured.
+This repo helps you quickly set up a fresh Linux install (Fedora KDE and Mint tested) for development, media, and homelab tinkering. These are tools i personally use and want in my system by default. So, while the configurations might not be pristine and standardized, the point is to get a new machine up and running with all the useful stuff i personally want (bloat😹). It uses a mix of bash scripts and Docker to get everything installed and configured, and i highly encourage for you to add and tweak your own fork with things you like! 
 
 ---
 ## How it Works:
@@ -22,6 +22,8 @@ This is meant for personal use. Be cautious when running scripts unless you trus
 
 First read the scripts and how they work, and test it on a virtual machine before running on your local computer.
 
+By the way, throughout this project i warn caution when running any script, however i advise to only consider using this repo if you're fairly familiar and comfortable with bash scripts and Linux.
+
 ---
 
 ## Clone the Repo:
@@ -29,8 +31,12 @@ First read the scripts and how they work, and test it on a virtual machine befor
 ```bash
 # First, make sure git is installed (it might be already)
 sudo dnf install -y git
-git clone https://github.com/GeSamaras/homey-shake ~/homelab-setup
-cd ~/homelab-setup
+git clone https://github.com/GeSamaras/homey-shake.git ~/homey-shake
+cd ~/homey-shake
+# Recommended to read all the scripts top to bottom.
+less setup.sh
+less install_system.sh
+# And so on
 ```
 
 ## Review the Scripts (RECOMMENDED!):

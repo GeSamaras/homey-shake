@@ -1,0 +1,41 @@
+# --- ComfyUI ---
+# Requires NVIDIA Container Toolkit for GPU acceleration.
+# Customize volume paths.
+version: "3.8"
+
+services:
+  comfyui:
+    # Choose a suitable ComfyUI image. This is a generic example.
+    # You might need one with specific dependencies pre-installed.
+    # Consider images from https://github.com/comfyanonymous/ComfyUI_docker
+    image: pytorch/pytorch:2.1.0-cuda12.1-cudnn8-runtime # Example base, needs ComfyUI installed
+    container_name: comfyui
+    command: python main.py --listen 0.0.0.0 --port 8188 # Adjust command as needed
+    ports:
+      - "8188:8188"
+    volumes:
+      # Mount ComfyUI source code if building locally or specific image structure
+      # - ./ComfyUI:/ComfyUI # Example if you clone ComfyUI repo here
+      - ./comfyui/models:/ComfyUI/models # Mount models dir externally
+      - ./comfyui/input:/ComfyUI/input
+      - ./comfyui/output:/ComfyUI/output
+      # Mount custom nodes if needed
+      # - ./comfyui/custom_nodes:/ComfyUI/custom_nodes
+    working_dir: /ComfyUI # Set working dir if needed by the image/command
+    # --- GPU Configuration (NVIDIA - Requires nvidia-container-toolkit) ---
+    # Uncomment the 'deploy' section below if you have nvidia-container-toolkit installed
+    # deploy:
+    #   resources:
+    #     reservations:
+    #       devices:
+    #         - driver: nvidia
+    #           count: all # or specify GPU IDs: "device=0,1"
+    #           capabilities: [gpu]
+    # --- End GPU Configuration ---
+    restart: unless-stopped
+    # Optional: Add environment variables if needed by your ComfyUI setup/image
+    # environment:
+    #   - CLI_ARGS=--preview-method auto
+
+# Note: Building a custom Dockerfile for ComfyUI is often recommended
+# to manage dependencies and custom nodes effectively.
