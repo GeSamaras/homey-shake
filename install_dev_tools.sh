@@ -5,108 +5,123 @@ source ./helpers.sh
 
 info "--- Starting Development Tools Installation ---"
 
-# --- Docker ---
-info "Installing Docker Engine, CLI, and Compose..."
-if ! command -v docker &> /dev/null; then
-    # Use the official convenience script
-    if command -v curl &> /dev/null; then
-        curl -fsSL https://get.docker.com -o get-docker.sh
-        sudo sh get-docker.sh
-        rm get-docker.sh
-        info "Docker installation script executed."
-    else
-        error "curl is required to download the Docker installation script."
-        # Consider adding a wget alternative if needed
+# --- Docker (Official Repo Method - Idempotent) ---
+info "Setting up Docker..."
+
+if ! check_command docker; then
+    info "Docker command not found. Proceeding with installation..."
+
+    if [ "$DISTRO" == "fedora" ]; then
+        # Ensure dnf-plugins-core is installed
+        install_package "$PKG_PLUGIN_CORE"
+
+        # Add Docker repository if not already added
+        if ! check_dnf_repo "docker-ce-stable"; then
+            info "Adding Docker CE repository (Fedora)..."
+            sudo dnf config-manager --add-repo https://download.docker.com/linux/fedora/docker-ce.repo
+        else
+            info "Docker CE repository (Fedora) already exists."
+        fi
+
+        # Install Docker packages
+        info "Installing Docker packages (Fedora)..."
+        install_package docker-ce
+        install_package docker-ce-cli
+        install_package containerd.io
+        install_package docker-buildx-plugin
+        install_package docker-compose-plugin # Docker Compose V2
+
+    elif [ "$DISTRO" == "debian" ]; then
+        # Install prerequisites
+        info "Installing Docker prerequisites (Debian/Ubuntu)..."
+        install_package ca-certificates
+        install_package curl
+        install_package gnupg
+        install_package lsb-release # If not present
+
+        # Add Docker GPG key if not already added
+        DOCKER_GPG_KEYRING="/etc/apt/keyrings/docker.gpg"
+        if [ ! -f "$DOCKER_GPG_KEYRING" ]; then
+             info "Adding Docker GPG key..."
+             sudo install -m 0755 -d /etc/apt/keyrings
+             curl -fsSL https://download.docker.com/linux/debian/gpg | sudo gpg --dearmor -o "$DOCKER_GPG_KEYRING"
+             sudo chmod a+r "$DOCKER_GPG_KEYRING" # Ensure readable
+        else
+            info "Docker GPG key already exists."
+        fi
+
+        # Add Docker repository if not already added
+        DOCKER_APT_SOURCE="/etc/apt/sources.list.d/docker.list"
+         if [ ! -f "$DOCKER_APT_SOURCE" ]; then
+            info "Adding Docker APT repository..."
+            echo \
+              "deb [arch=$(dpkg --print-architecture) signed-by=$DOCKER_GPG_KEYRING] https://download.docker.com/linux/debian \
+              $(lsb_release -cs) stable" | sudo tee "$DOCKER_APT_SOURCE" > /dev/null
+            $PKG_MANAGER update # Update list after adding repo
+         else
+            info "Docker APT repository already exists."
+         fi
+
+        # Install Docker packages
+        info "Installing Docker packages (Debian/Ubuntu)..."
+        install_package docker-ce
+        install_package docker-ce-cli
+        install_package containerd.io
+        install_package docker-buildx-plugin
+        install_package docker-compose-plugin # Docker Compose V2
     fi
 
-    # Add user to the docker group
-    if id -nG "$USER" | grep -qw docker; then
-        info "User $USER already in docker group."
-    else
+    # Post-installation steps (Run only if Docker was installed or not enabled/running)
+    info "Performing Docker post-installation steps..."
+
+    # Add user to the docker group if not already a member
+    if ! id -nG "$USER" | grep -qw docker; then
         info "Adding user $USER to the docker group..."
         sudo usermod -aG docker $USER
-        warn "You MUST log out and log back in or reboot for Docker group changes to take effect!"
-    fi
-
-    # Enable and start Docker service
-    info "Enabling and starting Docker service..."
-    sudo systemctl enable docker --now
-    info "Docker service enabled and started."
-
-else
-    info "Docker appears to be already installed."
-fi
-
-# Verify Docker Compose (v2 plugin) installation
-if ! docker compose version &> /dev/null; then
-    warn "Docker Compose v2 command not found. It should be installed as part of Docker Engine now."
-    warn "Please check Docker installation or install docker-compose-plugin manually if needed."
-    # Fedora: sudo dnf install docker-compose-plugin
-    # Debian: sudo apt-get install docker-compose-plugin
-else
-    info "Docker Compose v2 verified."
-fi
-
-
-# --- Miniconda ---
-# Verify checksums SHA256 from the official repo
-# https://repo.anaconda.com/miniconda/
-# If the checksum matches with the installer, then proceed with installation.
-info "Installing Miniconda..."
-if [ ! -d "$HOME/miniconda3" ]; then
-    # Download the latest Miniconda3 installer for Linux 64-bit
-    MINICONDA_INSTALLER="Miniconda3-latest-Linux-x86_64.sh"
-    info "Downloading Miniconda installer..."
-    if command -v curl &> /dev/null; then
-        curl -fsSL https://repo.anaconda.com/miniconda/$MINICONDA_INSTALLER -o "$MINICONDA_INSTALLER"
-    elif command -v wget &> /dev/null; then
-        wget https://repo.anaconda.com/miniconda/$MINICONDA_INSTALLER
+        if [ $? -eq 0 ]; then
+             warn "User $USER added to docker group. You MUST log out and log back in or reboot for this to take effect!"
+        else
+             error "Failed to add user $USER to docker group."
+        fi
     else
-        error "Cannot download Miniconda installer. Curl or Wget not found."
-        exit 1 # Or handle more gracefully
+        info "User $USER is already in the docker group."
     fi
 
-    # Run the installer in batch mode (-b), specify install path (-p)
-    info "Running Miniconda installer..."
-    bash "$MINICONDA_INSTALLER" -b -p "$HOME/miniconda3"
-
-    # Clean up installer
-    rm "$MINICONDA_INSTALLER"
-
-    # Initialize conda for the current shell (might need adjustment for zsh vs bash)
-    # This adds setup to .bashrc or .zshrc but requires a new shell to take effect
-    info "Initializing Miniconda..."
-    eval "$($HOME/miniconda3/bin/conda shell.bash hook)" # Attempt to make conda available immediately in bash
-    # Attempt initialization for common shells
-    if [ -f "$HOME/miniconda3/bin/conda" ]; then
-         "$HOME/miniconda3/bin/conda" init bash
-         "$HOME/miniconda3/bin/conda" init zsh
-         info "Miniconda initialized for bash and zsh. Please restart your shell or source your config file."
+    # Enable and start Docker service if not already active/enabled
+    if ! systemctl is-active --quiet docker; then
+        info "Starting Docker service..."
+        sudo systemctl start docker
     else
-         error "Could not find conda executable to run init."
+        info "Docker service is already active."
+    fi
+     if ! systemctl is-enabled --quiet docker; then
+        info "Enabling Docker service to start on boot..."
+        sudo systemctl enable docker
+    else
+        info "Docker service is already enabled."
     fi
 
-    info "Miniconda installed to $HOME/miniconda3."
-    warn "You need to restart your shell or run 'source ~/.bashrc' or 'source ~/.zshrc' for conda commands to be available."
+    # Verify docker compose plugin
+    if ! check_command docker-compose && ! docker compose version &> /dev/null; then
+         warn "Docker Compose command verification failed. Please check installation."
+    else
+         info "Docker Compose command verified."
+    fi
+
 else
-    info "Miniconda directory $HOME/miniconda3 already exists. Skipping installation."
+    info "Docker command detected. Assuming Docker is installed and configured."
+    # Optional: Still check group membership and service status here if desired
+    if ! id -nG "$USER" | grep -qw docker; then
+         warn "User $USER is not in the docker group. You may need to add manually ('sudo usermod -aG docker $USER') and re-login."
+    fi
+     if ! systemctl is-active --quiet docker; then
+        warn "Docker service is not active. You may need to start it ('sudo systemctl start docker')."
+    fi
 fi
 
-# --- Bun ---
-info "Installing Bun..."
-if ! command -v bun &> /dev/null; then
-    if command -v curl &> /dev/null; then
-        curl -fsSL https://bun.sh/install | bash
-        # Add bun to PATH for the current session if possible (installation script might do this)
-        export PATH="$HOME/.bun/bin:$PATH"
-        info "Bun installed. Added to PATH for current session."
-        warn "You might need to add $HOME/.bun/bin to your shell's PATH manually in .bashrc or .zshrc if it's not already done."
-    else
-        error "curl is required to install Bun."
-    fi
-else
-    info "Bun already installed."
-fi
+
+# --- Removed Miniconda & Bun ---
+info "Skipping Miniconda and Bun installation as they were removed from scope."
 
 
 info "--- Development Tools Installation Complete ---"

@@ -9,55 +9,40 @@ info "--- Setting up Docker Directories and Compose Files ---"
 DOCKER_BASE_DIR="$HOME/homelab-docker"
 TEMPLATE_DIR="./docker-compose-templates"
 
-info "Creating base Docker directory: $DOCKER_BASE_DIR"
+# List of services to set up (directories in the template folder)
+services="jellyfin-stack navidrome immich homeassistant" # Update this list
+
+# Check if template directory exists
+if [ ! -d "$TEMPLATE_DIR" ]; then
+    error "Template directory '$TEMPLATE_DIR' not found. Cannot set up Docker directories."
+    exit 1
+fi
+
+info "Ensuring base Docker directory exists: $DOCKER_BASE_DIR"
 mkdir -p "$DOCKER_BASE_DIR"
 
-# List of services (directories in the template folder)
-# Exclude files like READMEs if necessary
-services=$(find "$TEMPLATE_DIR" -maxdepth 1 -mindepth 1 -type d -printf '%f\n')
-
-# Copy template files
+# Copy template files for specified services
 for service in $services; do
     source_path="$TEMPLATE_DIR/$service"
     dest_path="$DOCKER_BASE_DIR/$service"
 
     if [ -d "$source_path" ]; then
-        info "Setting up directory for $service at $dest_path"
-        mkdir -p "$dest_path"
-
-        info "Copying files from $source_path to $dest_path"
-        # Use cp -n to avoid overwriting existing user changes if script is re-run
-        cp -Rn "$source_path"/* "$dest_path/"
-
-        # Create common subdirectories if they don't exist (optional, compose usually handles this)
-        # mkdir -p "$dest_path/config"
-        # mkdir -p "$dest_path/data"
-
-        # Add placeholder .env file if one doesn't exist? Might be too intrusive.
-        # touch "$dest_path/.env" # Example placeholder
-
-        info "Copied configuration template for $service."
-        warn "IMPORTANT: Review and customize '$dest_path/docker-compose.yml' and any '.env' files before running 'docker compose up -d' in that directory."
+        # Only proceed if destination doesn't exist or is empty, to be less destructive
+        # Or use `cp -n` to avoid overwriting existing files
+        if [ ! -d "$dest_path" ] || [ -z "$(ls -A "$dest_path")" ]; then
+             info "Setting up directory and copying templates for $service at $dest_path"
+             mkdir -p "$dest_path"
+             cp -R "$source_path"/* "$dest_path/" # Copy contents recursively
+             info "Copied configuration template for $service."
+             warn "IMPORTANT: Review and customize '$dest_path/docker-compose.yml' before running 'docker compose up -d'."
+        else
+            info "Directory $dest_path for service $service already exists and is not empty. Skipping copy."
+            warn "Review contents of $dest_path manually."
+        fi
+    else
+        warn "Template directory '$source_path' for service $service not found. Skipping."
     fi
 done
-
-# Special handling for services without compose files (like Kali)
-kali_readme="$TEMPLATE_DIR/kali/README.md"
-kali_dest_dir="$DOCKER_BASE_DIR/kali"
-if [ -f "$kali_readme" ]; then
-    mkdir -p "$kali_dest_dir"
-    cp "$kali_readme" "$kali_dest_dir/"
-    info "Copied instructions for Kali Linux to $kali_dest_dir."
-fi
-
-sierra_readme="$TEMPLATE_DIR/sierra/README.md"
-sierra_dest_dir="$DOCKER_BASE_DIR/sierra"
-if [ -f "$sierra_readme" ]; then
-    mkdir -p "$sierra_dest_dir"
-    cp "$sierra_readme" "$sierra_dest_dir/"
-    info "Copied placeholder/instructions for SIERRA to $sierra_dest_dir."
-fi
-
 
 info "--- Docker Directory Setup Complete ---"
 info "Navigate to subdirectories within $DOCKER_BASE_DIR, customize the docker-compose.yml files,"

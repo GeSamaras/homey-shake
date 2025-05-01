@@ -5,70 +5,67 @@ source ./helpers.sh
 
 info "--- Starting System Package Installation ---"
 
-# Update package lists and upgrade existing packages
+# Update package lists and upgrade existing packages (Run always if stage is selected)
 info "Updating system packages..."
 if $UPDATE_CMD; then
   info "System packages updated successfully."
 else
-  error "Failed to update system packages."
-  exit 1
+  error "Failed to update system packages. Proceeding with caution..."
+  # Decide if this should be fatal: exit 1
 fi
 
-# Install core utilities
-info "Installing core utilities (git, curl, wget, unzip, zsh, tmux, gpg)..."
-install_package git
+# Install core utilities (Idempotent checks within install_package)
+info "Installing core utilities..."
 install_package curl
 install_package wget
 install_package unzip
 install_package zsh
 install_package tmux
-install_package gnupg # Often gpg or gnupg2 depending on distro
-
-# Install fzf (Fuzzy Finder)
+install_package gnupg
 install_package fzf
-
-# Install OpenVPN & NetworkManager integration
-info "Installing OpenVPN..."
-if [ "$DISTRO" == "fedora" ]; then
-    install_package openvpn
-    install_package NetworkManager-openvpn-gnome # Provides GUI integration
-elif [ "$DISTRO" == "debian" ]; then
-    install_package openvpn
-    install_package network-manager-openvpn-gnome # Check exact name for KDE if needed
-fi
-
-# Install KeePassXC Password Manager
-info "Installing KeePassXC..."
 install_package keepassxc
 
-# --- Distro-Specific Repo Setups ---
 
+# --- Distro-Specific Repo Setups ---
 if [ "$DISTRO" == "fedora" ]; then
-  info "Setting up RPM Fusion repositories (Fedora)..."
-  # Check if already installed might be good here
-  if ! rpm -q rpmfusion-free-release &>/dev/null; then
-      $PKG_MANAGER install -y \
-        https://download1.rpmfusion.org/free/fedora/rpmfusion-free-release-$(rpm -E %fedora).noarch.rpm
+  info "Checking RPM Fusion repositories (Fedora)..."
+  # Ensure dnf-plugins-core is installed for config-manager
+  install_package "$PKG_PLUGIN_CORE"
+
+  # RPM Fusion Free
+  if ! check_package rpmfusion-free-release; then
+    info "Adding RPM Fusion Free repository..."
+    if $PKG_MANAGER install -y \
+      https://download1.rpmfusion.org/free/fedora/rpmfusion-free-release-$(rpm -E %fedora).noarch.rpm; then
       info "RPM Fusion Free repo added."
+    else
+      error "Failed to add RPM Fusion Free repo."
+    fi
   else
-      info "RPM Fusion Free repo already installed."
+    info "RPM Fusion Free repo already installed."
   fi
-  if ! rpm -q rpmfusion-nonfree-release &>/dev/null; then
-      $PKG_MANAGER install -y \
-        https://download1.rpmfusion.org/nonfree/fedora/rpmfusion-nonfree-release-$(rpm -E %fedora).noarch.rpm
+
+  # RPM Fusion Non-Free
+  if ! check_package rpmfusion-nonfree-release; then
+    info "Adding RPM Fusion Non-Free repository..."
+    if $PKG_MANAGER install -y \
+      https://download1.rpmfusion.org/nonfree/fedora/rpmfusion-nonfree-release-$(rpm -E %fedora).noarch.rpm; then
       info "RPM Fusion Non-Free repo added."
+    else
+      error "Failed to add RPM Fusion Non-Free repo."
+    fi
   else
-      info "RPM Fusion Non-Free repo already installed."
+    info "RPM Fusion Non-Free repo already installed."
   fi
-  # Install tools needed for codecs later maybe? (dnf groupupdate multimedia --setop="install_weak_deps=False" --exclude=PackageKit-gstreamer-plugin) - Keep simple for now.
-  # Install AppStream metadata for PackageKit
-  sudo dnf groupupdate core -y
+  # Optional: Install AppStream metadata or multimedia group after repos are added
+  # sudo dnf groupupdate core -y
+  # sudo dnf groupupdate multimedia --setop="install_weak_deps=False" --exclude=PackageKit-gstreamer-plugin -y
+  # sudo dnf groupupdate sound-and-video -y
 
 elif [ "$DISTRO" == "debian" ]; then
   info "Ensuring contrib and non-free repos are enabled (Debian/Ubuntu)..."
-  # This often requires manual editing of /etc/apt/sources.list or adding files
-  # Installing ubuntu-restricted-extras might cover some multimedia needs on Ubuntu.
-  warn "Please ensure 'contrib' and 'non-free' (Debian) or 'multiverse'/'restricted' (Ubuntu) repos are enabled for full multimedia/driver support."
+  warn "Automatic check/enable for contrib/non-free/multiverse not implemented."
+  warn "Please ensure these are enabled manually in /etc/apt/sources.list if needed for specific packages (like Steam or codecs)."
 fi
 
 info "--- System Package Installation Complete ---"
