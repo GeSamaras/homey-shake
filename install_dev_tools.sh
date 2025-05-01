@@ -49,6 +49,9 @@ fi
 
 
 # --- Miniconda ---
+# Verify checksums SHA256 from the official repo
+# https://repo.anaconda.com/miniconda/
+# If the checksum matches with the installer, then proceed with installation.
 info "Installing Miniconda..."
 if [ ! -d "$HOME/miniconda3" ]; then
     # Download the latest Miniconda3 installer for Linux 64-bit
