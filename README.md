@@ -1,6 +1,6 @@
 # homey-shake
 
-This repo helps you quickly set up a fresh Linux install (Fedora KDE and Mint tested) for development, media, and homelab tinkering. These are tools i personally use and want in my system by default. So, while the configurations might not be pristine and standardized, the point is to get a new machine up and running with all the useful stuff i personally want (bloat😹). It uses a mix of bash scripts and Docker to get everything installed and configured, and i highly encourage for you to add and tweak your own fork with things you like! 
+This repo helps you quickly set up a fresh Linux install (Fedora KDE and Mint tested) for development, media, and homelab tinkering. These are tools i personally use and want in my system by default. So, while the configurations might not be pristine and standardized, the point is to get a new machine up and running with all the useful stuff i personally want (bloat🤠). It uses a mix of bash scripts and Docker to get everything installed and configured, and i highly encourage for you to add and tweak your own fork with things you like! 
 
 ---
 ## How it Works:

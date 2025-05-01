@@ -24,7 +24,7 @@ install_package tmux
 install_package gnupg
 install_package fzf
 install_package keepassxc
-
+install_package btop
 
 # --- Distro-Specific Repo Setups ---
 if [ "$DISTRO" == "fedora" ]; then

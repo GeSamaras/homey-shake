@@ -69,6 +69,33 @@ else
 	info "Sublime Text appears to be installed. Skipping setup."
 fi
 
+
+# --- Visual Studio Code ---
+info "Setting up Visual Studio Code..."
+if ! check_command code; then # Check if 'code' command exists
+    if [ "$DISTRO" == "fedora" ]; then
+        # Check if repo exists using the repo ID 'code'
+        if ! check_dnf_repo "code"; then
+             info "Adding VS Code repository (Fedora)..."
+             # Import Microsoft GPG key
+             sudo rpm --import https://packages.microsoft.com/keys/microsoft.asc
+             # Add the VS Code repository configuration
+             sudo sh -c 'echo -e "[code]\nname=Visual Studio Code\nbaseurl=https://packages.microsoft.com/yumrepos/vscode\nenabled=1\ngpgcheck=1\ngpgkey=https://packages.microsoft.com/keys/microsoft.asc" > /etc/yum.repos.d/vscode.repo'
+             # dnf should pick up the new repo on next install/update automatically
+             info "VS Code repository added."
+        else
+            info "VS Code repository (Fedora) already exists."
+        fi
+        # Install the package
+        install_package code
+    elif [ "$DISTRO" == "debian" ]; then
+        # Placeholder for Debian/Ubuntu - requires different repo setup steps
+        warn "VS Code automatic setup for Debian/Ubuntu is not implemented yet."
+    fi
+else
+    info "VS Code command 'code' found. Skipping setup."
+fi
+
 # --- Install using Flatpak (Idempotent) ---
 
 info "Setting up Flatpak..."

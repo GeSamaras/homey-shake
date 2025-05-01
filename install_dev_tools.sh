@@ -119,9 +119,68 @@ else
     fi
 fi
 
+# --- Virtualization (QEMU/KVM, libvirt, virt-manager) ---
+info "Setting up Virtualization..."
 
-# --- Removed Miniconda & Bun ---
-info "Skipping Miniconda and Bun installation as they were removed from scope."
+if [ "$DISTRO" == "fedora" ]; then
+    # Install the GUI manager tool
+    install_package virt-manager
 
+    # Install the core virtualization group packages
+    # We'll check for libvirtd service as a proxy for the group being installed
+    # but run the group install anyway to ensure all components are present/updated.
+    info "Ensuring @virtualization group packages are installed..."
+    if sudo dnf group install -y virtualization; then
+        info "@virtualization group packages installed/verified successfully."
+    else
+        error "Failed during @virtualization group installation."
+        # Consider exiting if this is critical: exit 1
+    fi
+
+    # Enable and start the libvirt daemon service
+    LIBVIRT_SERVICE="libvirtd"
+    if systemctl list-unit-files | grep -q "^${LIBVIRT_SERVICE}.service"; then
+        if ! systemctl is-active --quiet "$LIBVIRT_SERVICE"; then
+            info "Starting $LIBVIRT_SERVICE service..."
+            sudo systemctl start "$LIBVIRT_SERVICE"
+        else
+            info "$LIBVIRT_SERVICE service is already active."
+        fi
+        if ! systemctl is-enabled --quiet "$LIBVIRT_SERVICE"; then
+            info "Enabling $LIBVIRT_SERVICE service..."
+            sudo systemctl enable "$LIBVIRT_SERVICE"
+        else
+            info "$LIBVIRT_SERVICE service is already enabled."
+        fi
+    else
+        error "libvirtd.service not found. Virtualization setup may be incomplete."
+    fi
+
+    # Add user to the libvirt group for non-root VM management
+    LIBVIRT_GROUP="libvirt"
+    if ! id -nG "$USER" | grep -qw "$LIBVIRT_GROUP"; then
+        info "Adding user $USER to the $LIBVIRT_GROUP group..."
+        sudo usermod -aG "$LIBVIRT_GROUP" "$USER"
+        if [ $? -eq 0 ]; then
+             warn "User $USER added to $LIBVIRT_GROUP group. You MUST log out and log back in or reboot for this to take effect!"
+        else
+             error "Failed to add user $USER to $LIBVIRT_GROUP group."
+        fi
+    else
+        info "User $USER is already in the $LIBVIRT_GROUP group."
+    fi
+
+elif [ "$DISTRO" == "debian" ]; then
+    # Placeholder for Debian/Ubuntu KVM setup
+    warn "QEMU/KVM/virt-manager automatic setup for Debian/Ubuntu is not implemented yet."
+    # Steps would involve:
+    # sudo apt install qemu-kvm libvirt-daemon-system libvirt-clients bridge-utils virt-manager -y
+    # sudo adduser $USER libvirt
+    # sudo adduser $USER libvirt-qemu # Often needed too
+    # Check service: libvirtd
+    # Check group: libvirt
+fi
+
+info "--- Virtualization Setup Complete ---"
 
 info "--- Development Tools Installation Complete ---"
