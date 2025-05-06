@@ -5,73 +5,68 @@ source ./helpers.sh
 
 info "--- Starting Development Tools Installation ---"
 
-# --- Docker (Official Repo Method - Idempotent) ---
+# --- Docker (Official Install Script Method - Idempotent) ---
 info "Setting up Docker..."
 
 if ! check_command docker; then
-    info "Docker command not found. Proceeding with installation..."
+    info "Docker command not found. Proceeding with installation using official script..."
 
-    if [ "$DISTRO" == "fedora" ]; then
-        # Ensure dnf-plugins-core is installed
-        install_package "$PKG_PLUGIN_CORE"
+    DOCKER_SCRIPT_URL="https://get.docker.com"
+    DOCKER_SCRIPT_FILE="get-docker.sh"
+    # !!! IMPORTANT: Docker does not provide a stable official checksum for the get.docker.com script itself.
+    # This checksum is based on a specific point in time and WILL likely change when Docker updates the script.
+    # Running this script relies on trusting the source (get.docker.com) or manually verifying the script/checksum yourself.
+    # You can get the current checksum by downloading the script and running `sha256sum get-docker.sh`
+    EXPECTED_DOCKER_SCRIPT_CHECKSUM="PLACE_A_RECENT_VALID_SHA256_SUM_HERE_OR_REMOVE_CHECK" # e.g. "abcdef123..."
+    VERIFY_CHECKSUM=true # Set to false to skip checksum verification if desired (less secure)
 
-        # Add Docker repository if not already added
-        if ! check_dnf_repo "docker-ce-stable"; then
-            info "Adding Docker CE repository (Fedora)..."
-            sudo dnf config-manager --add-repo https://download.docker.com/linux/fedora/docker-ce.repo
-        else
-            info "Docker CE repository (Fedora) already exists."
-        fi
-
-        # Install Docker packages
-        info "Installing Docker packages (Fedora)..."
-        install_package docker-ce
-        install_package docker-ce-cli
-        install_package containerd.io
-        install_package docker-buildx-plugin
-        install_package docker-compose-plugin # Docker Compose V2
-
-    elif [ "$DISTRO" == "debian" ]; then
-        # Install prerequisites
-        info "Installing Docker prerequisites (Debian/Ubuntu)..."
-        install_package ca-certificates
-        install_package curl
-        install_package gnupg
-        install_package lsb-release # If not present
-
-        # Add Docker GPG key if not already added
-        DOCKER_GPG_KEYRING="/etc/apt/keyrings/docker.gpg"
-        if [ ! -f "$DOCKER_GPG_KEYRING" ]; then
-             info "Adding Docker GPG key..."
-             sudo install -m 0755 -d /etc/apt/keyrings
-             curl -fsSL https://download.docker.com/linux/debian/gpg | sudo gpg --dearmor -o "$DOCKER_GPG_KEYRING"
-             sudo chmod a+r "$DOCKER_GPG_KEYRING" # Ensure readable
-        else
-            info "Docker GPG key already exists."
-        fi
-
-        # Add Docker repository if not already added
-        DOCKER_APT_SOURCE="/etc/apt/sources.list.d/docker.list"
-         if [ ! -f "$DOCKER_APT_SOURCE" ]; then
-            info "Adding Docker APT repository..."
-            echo \
-              "deb [arch=$(dpkg --print-architecture) signed-by=$DOCKER_GPG_KEYRING] https://download.docker.com/linux/debian \
-              $(lsb_release -cs) stable" | sudo tee "$DOCKER_APT_SOURCE" > /dev/null
-            $PKG_MANAGER update # Update list after adding repo
-         else
-            info "Docker APT repository already exists."
-         fi
-
-        # Install Docker packages
-        info "Installing Docker packages (Debian/Ubuntu)..."
-        install_package docker-ce
-        install_package docker-ce-cli
-        install_package containerd.io
-        install_package docker-buildx-plugin
-        install_package docker-compose-plugin # Docker Compose V2
+    if [ "$EXPECTED_DOCKER_SCRIPT_CHECKSUM" == "PLACE_A_RECENT_VALID_SHA256_SUM_HERE_OR_REMOVE_CHECK" ]; then
+        warn "No valid checksum provided for Docker install script. Checksum verification will be skipped."
+        VERIFY_CHECKSUM=false
     fi
 
-    # Post-installation steps (Run only if Docker was installed or not enabled/running)
+    # Download the script
+    info "Downloading Docker installation script from $DOCKER_SCRIPT_URL..."
+    if curl -fsSL "$DOCKER_SCRIPT_URL" -o "$DOCKER_SCRIPT_FILE"; then
+        info "Download successful."
+
+        # Verify checksum if enabled
+        if [ "$VERIFY_CHECKSUM" = true ]; then
+            info "Verifying checksum for $DOCKER_SCRIPT_FILE..."
+            ACTUAL_CHECKSUM=$(sha256sum "$DOCKER_SCRIPT_FILE" | awk '{print $1}')
+            if [ "$ACTUAL_CHECKSUM" == "$EXPECTED_DOCKER_SCRIPT_CHECKSUM" ]; then
+                info "Checksum valid."
+            else
+                error "CHECKSUM MISMATCH for $DOCKER_SCRIPT_FILE!"
+                error "Expected: $EXPECTED_DOCKER_SCRIPT_CHECKSUM"
+                error "Got:      $ACTUAL_CHECKSUM"
+                error "The official Docker install script may have changed."
+                error "Please update the EXPECTED_DOCKER_SCRIPT_CHECKSUM in the script or download/verify manually."
+                rm "$DOCKER_SCRIPT_FILE"
+                exit 1
+            fi
+        fi
+
+        # Execute the script
+        info "Executing Docker installation script..."
+        # The script itself handles adding repos and installing packages
+        if sudo sh "$DOCKER_SCRIPT_FILE"; then
+             info "Docker installation script executed successfully."
+        else
+             error "Docker installation script failed."
+             rm "$DOCKER_SCRIPT_FILE" # Clean up even on failure
+             exit 1
+        fi
+
+        # Clean up the script
+        rm "$DOCKER_SCRIPT_FILE"
+
+    else
+        error "Failed to download Docker installation script."
+        exit 1
+    fi
+
+    # --- Post-installation steps --- (These remain mostly the same)
     info "Performing Docker post-installation steps..."
 
     # Add user to the docker group if not already a member
@@ -88,21 +83,26 @@ if ! check_command docker; then
     fi
 
     # Enable and start Docker service if not already active/enabled
-    if ! systemctl is-active --quiet docker; then
-        info "Starting Docker service..."
-        sudo systemctl start docker
+    # Check if systemctl is available first
+    if check_command systemctl; then
+        if ! systemctl is-active --quiet docker; then
+            info "Starting Docker service..."
+            sudo systemctl start docker
+        else
+            info "Docker service is already active."
+        fi
+         if ! systemctl is-enabled --quiet docker; then
+            info "Enabling Docker service to start on boot..."
+            sudo systemctl enable docker
+        else
+            info "Docker service is already enabled."
+        fi
     else
-        info "Docker service is already active."
-    fi
-     if ! systemctl is-enabled --quiet docker; then
-        info "Enabling Docker service to start on boot..."
-        sudo systemctl enable docker
-    else
-        info "Docker service is already enabled."
+        warn "systemctl not found. Cannot manage Docker service automatically."
     fi
 
-    # Verify docker compose plugin
-    if ! check_command docker-compose && ! docker compose version &> /dev/null; then
+    # Verify docker compose plugin (installed by the script)
+    if ! docker compose version &> /dev/null; then
          warn "Docker Compose command verification failed. Please check installation."
     else
          info "Docker Compose command verified."
@@ -114,7 +114,7 @@ else
     if ! id -nG "$USER" | grep -qw docker; then
          warn "User $USER is not in the docker group. You may need to add manually ('sudo usermod -aG docker $USER') and re-login."
     fi
-     if ! systemctl is-active --quiet docker; then
+    if check_command systemctl && ! systemctl is-active --quiet docker; then
         warn "Docker service is not active. You may need to start it ('sudo systemctl start docker')."
     fi
 fi
@@ -182,5 +182,32 @@ elif [ "$DISTRO" == "debian" ]; then
 fi
 
 info "--- Virtualization Setup Complete ---"
+
+# --- Python Development Tools ---
+info "Setting up Python development tools..."
+
+# Ensure pip3 command is available (should be installed by install_system.sh)
+if ! check_command pip3; then
+    error "pip3 command not found. Cannot install pip packages (like cookiecutter)."
+    error "Ensure 'python3-pip' was installed successfully in the system stage."
+else
+    # Install Cookiecutter
+    info "Checking/Installing cookiecutter..."
+    # Check if the command exists as proxy for installation
+    if ! check_command cookiecutter; then
+         info "Attempting to install cookiecutter via pip..."
+         # Use sudo to install system-wide for simplicity in this script context
+         # Using 'pip3' explicitly is safer than just 'pip'
+         if sudo pip3 install cookiecutter; then
+             info "cookiecutter installed successfully."
+         else
+             error "Failed to install cookiecutter via pip."
+             # Don't exit, just report error
+         fi
+    else
+        info "cookiecutter command found. Assuming it is installed."
+    fi
+fi
+
 
 info "--- Development Tools Installation Complete ---"

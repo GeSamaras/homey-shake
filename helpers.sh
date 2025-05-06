@@ -14,83 +14,83 @@ error() { echo "ERROR: $1" >&2; }
 # determine the appropriate commands to be run.
 
 detect_package_manager() {
-  if command -v dnf &> /dev/null; then
-    info "Detected dnf package manager (Fedora/RHEL-based)."
-    PKG_MANAGER="sudo dnf" # Prefix to run 
-    UPDATE_CMD="$PKG_MANAGER update -y"
-    INSTALL_CMD="$PKG_MANAGER install -y"
-    CHECK_PKG_CMD="rpm -q" # Command to check if a package is installed
-    REPO_QUERY_CMD="dnf repolist enabled" # Command to list enabled repos
-    PKG_PLUGIN_CORE="dnf-plugins-core" # Package providing repo management commands
-    DISTRO="fedora"
-  elif command -v apt-get &> /dev/null; then
-    info "Detected apt package manager (Debian/Ubuntu-based)."
-    PKG_MANAGER="sudo apt-get"
-    UPDATE_CMD="$PKG_MANAGER update && $PKG_MANAGER upgrade -y"
-    INSTALL_CMD="$PKG_MANAGER install -y"
-    CHECK_PKG_CMD="dpkg -s" # Command to check if a package is installed
-    REPO_QUERY_CMD="grep -R --include=\*.list ^deb /etc/apt/sources.list /etc/apt/sources.list.d/" # Command to check repo sources
-    PKG_PLUGIN_CORE="software-properties-common" # Provides add-apt-repository, often installed
-    DISTRO="debian"
-  else
-    error "Unsupported package manager. Exiting."
-    exit 1
-  fi
+    if command -v dnf &> /dev/null; then
+        info "Detected dnf package manager (Fedora/RHEL-based)."
+        PKG_MANAGER="sudo dnf" # Prefix to run 
+        UPDATE_CMD="$PKG_MANAGER update -y"
+        INSTALL_CMD="$PKG_MANAGER install -y"
+        CHECK_PKG_CMD="rpm -q" # Command to check if a package is installed
+        REPO_QUERY_CMD="dnf repolist enabled" # Command to list enabled repos
+        PKG_PLUGIN_CORE="dnf-plugins-core" # Package providing repo management commands
+        DISTRO="fedora"
+    elif command -v apt-get &> /dev/null; then
+        info "Detected apt package manager (Debian/Ubuntu-based)."
+        PKG_MANAGER="sudo apt-get"
+        UPDATE_CMD="$PKG_MANAGER update && $PKG_MANAGER upgrade -y"
+        INSTALL_CMD="$PKG_MANAGER install -y"
+        CHECK_PKG_CMD="dpkg -s" # Command to check if a package is installed
+        REPO_QUERY_CMD="grep -R --include=\*.list ^deb /etc/apt/sources.list /etc/apt/sources.list.d/" # Command to check repo sources
+        PKG_PLUGIN_CORE="software-properties-common" # Provides add-apt-repository, often installed
+        DISTRO="debian"
+    else
+        error "Unsupported package manager. Exiting."
+        exit 1
+    fi
 }
 
 # Function to check if a command exists
 check_command() {
-  command -v "$1" &> /dev/null
+    command -v "$1" &> /dev/null
 }
 
 # Function to check if a package is installed
 check_package() {
-  local pkg_name="$1"
-  # Need to adjust check command syntax slightly based on manager
-  if [ "$DISTRO" == "fedora" ]; then
-    $CHECK_PKG_CMD "$pkg_name" &> /dev/null
-  elif [ "$DISTRO" == "debian" ]; then
-    $CHECK_PKG_CMD "$pkg_name" 2>/dev/null | grep -q '^Status: install ok installed'
-  else
-    return 1 # Unknown distro
-  fi
+    local pkg_name="$1"
+    # Need to adjust check command syntax slightly based on manager
+    if [ "$DISTRO" == "fedora" ]; then
+        $CHECK_PKG_CMD "$pkg_name" &> /dev/null
+    elif [ "$DISTRO" == "debian" ]; then
+        $CHECK_PKG_CMD "$pkg_name" 2>/dev/null | grep -q '^Status: install ok installed'
+    else
+        return 1 # Unknown distro
+    fi
 }
 
 # Function to install packages idempotently, aiming to avoid repetition.
 # This will be called by other scripts, filled in with the packaged to be installed,
 # and then proceed with either installing or skipping.
 install_package() {
-  local package_name="$1"
-  info "Checking package: $package_name..."
-  if check_package "$package_name"; then
-    info "$package_name is already installed. Skipping."
-  else
-    info "Attempting to install $package_name..."
-    if $INSTALL_CMD "$package_name"; then
-      info "$package_name installed successfully."
+    local package_name="$1"
+    info "Checking package: $package_name..."
+    if check_package "$package_name"; then
+        info "$package_name is already installed. Skipping."
     else
-      error "Failed to install $package_name."
-      # Optionally exit here: exit 1
-      return 1 # Indicate failure
+        info "Attempting to install $package_name..."
+        if $INSTALL_CMD "$package_name"; then
+            info "$package_name installed successfully."
+        else
+            error "Failed to install $package_name."
+            # Optionally exit here: exit 1
+            return 1 # Indicate failure
+        fi
     fi
-  fi
-  return 0 # Indicate success or already installed
+    return 0 # Indicate success or already installed
 }
 
 # Check if a directory exists
 check_directory() {
-  [ -d "$1" ]
+    [ -d "$1" ]
 }
 
 # Check if a file exists
 check_file() {
-  [ -f "$1" ]
+    [ -f "$1" ]
 }
 
 # Check if a DNF repo is enabled (Fedora)
 check_dnf_repo() {
-  local repo_id="$1"
-  $REPO_QUERY_CMD | grep -q "^$repo_id\s"
+    local repo_id="$1"
+    $REPO_QUERY_CMD | grep -q "^$repo_id\s"
 }
 
 # If an Apt repo source exists
