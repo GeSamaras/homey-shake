@@ -16,7 +16,7 @@ error() { echo "ERROR: $1" >&2; }
 detect_package_manager() {
     if command -v dnf &> /dev/null; then
         info "Detected dnf package manager (Fedora/RHEL-based)."
-        PKG_MANAGER="sudo dnf" # Prefix to run 
+        PKG_MANAGER="sudo dnf" # Prefix to run install commands
         UPDATE_CMD="$PKG_MANAGER update -y"
         INSTALL_CMD="$PKG_MANAGER install -y"
         CHECK_PKG_CMD="rpm -q" # Command to check if a package is installed
@@ -77,12 +77,10 @@ install_package() {
     return 0 # Indicate success or already installed
 }
 
-# Check if a directory exists
 check_directory() {
     [ -d "$1" ]
 }
 
-# Check if a file exists
 check_file() {
     [ -f "$1" ]
 }

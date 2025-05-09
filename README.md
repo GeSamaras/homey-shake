@@ -67,7 +67,6 @@ Here's the rundown:
 | Name        | Category            | Notes                                   |
 | ----------- | ------------------- | --------------------------------------- |
 | DNF Updates | Utilities           | Ensures your base system is up-to-date. |
-| Git         | Version Control     | (duh🤠)                                 |
 | Zsh         | Shell               | Different shell                         |
 | Oh My Zsh   | Shell               | A cooler shell for looks-maxxing        |
 | fzf         | Utility             | Fuzzy finder                            |
@@ -105,11 +104,6 @@ Here's the rundown:
 
 Adds your user to the docker group (requires re-login!).
 
-Python (via Miniconda):
-Installs Miniconda for managing Python environments. You'll likely need to run conda init or manually configure your shell after install if the script doesn't do it automatically.
-
-Bun: Fast JavaScript runtime/bundler/package manager (via official install script).
-
 
 4. Docker Containers / Stacks (via Docker Compose):
 
@@ -136,16 +130,18 @@ Run docker compose up -d to start the stack in the background.
 | Jackett        | Index manager for Sonarr and Radarr      |
 *(interesting services to add: Readarr, Lidarr, Kapowarr, Gluetun, Tdarr, Bazarr, Flaresolverr, Homarr*
 
-- ComfyUI: (in ~/homelab-docker/comfyui/) - AI Image Generation UI. Note: GPU passthrough might require installing NVIDIA Container Toolkit separately.
 - Navidrome: (in ~/homelab-docker/navidrome/) - Music Streaming Server.
 - Immich: (in ~/homelab-docker/immich/) - Self-hosted photos.
 - Home Assistant: (in ~/homelab-docker/homeassistant/) - Home automation platform.
-- Kali Linux: (in ~/homelab-docker/kali/ or just provide docker run command) - Penetration testing distro.
+
 
 ---
 
 ### Future Plans:
 
-- [ ] Finding a way to setup Wazuh and ELK Stack agents on the user's computer.
-- [ ] Compatibility with Windows.
-- [ ] Interactive GUI.
+- [ ] Automatic testing, Github Actions, CI/CD
+- [ ] Ricing maybe?
+- [ ] Better setup for docker compose.
+- [ ] Graphical flair, coloring, better readability and formatting.
+- [ ] Interactive UI.
+- [ ] Finding a way to setup Wazuh and ELK Stack agents.
