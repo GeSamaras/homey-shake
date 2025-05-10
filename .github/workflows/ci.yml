@@ -51,7 +51,7 @@ jobs:
               run: |
                   sudo apt-get update
                   sudo apt-get install -y lsb-release python3-pip flatpak
-                  flatpak remote-add --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo
+                  sudo flatpak remote-add --user --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo
 
             - name: Run homey-shake installation test for stage ${{ matrix.stage }}
               run: ./tests/run_installation_test.sh "${{ matrix.stage }}"
