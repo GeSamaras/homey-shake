@@ -5,14 +5,14 @@ This repo helps you quickly set up a fresh Linux install (Fedora KDE and Mint te
 ---
 ## How it Works:
 
-You'll clone this repo, run a main script, and it'll handle installing system packages, desktop apps, development tools, and setting up Docker containers via Docker Compose.
+You'll clone this repo, run the main script, and it'll handle installing system packages, desktop apps, development tools, and setting up Docker containers.
 
 ---
 ### Prerequisites
 
-Fresh Fedora KDE Install: This is designed for a clean slate. While it might work on an existing system, it's untested and could overwrite things.
-Internet Connection: The scripts need to download packages, installers, and container images.
-`sudo` privileges: The scripts need root access to install software.
+- Debian/Ubuntu or Fedora system.
+- git.
+- `sudo` privileges: The scripts need root access to install software.
 
 ---
 
@@ -29,19 +29,20 @@ By the way, throughout this project i warn caution when running any script, howe
 ## Clone the Repo:
 
 ```bash
-# First, make sure git is installed (it might be already)
+# First, make sure git is installed
 sudo dnf install -y git
 git clone https://github.com/GeSamaras/homey-shake.git ~/homey-shake
 cd ~/homey-shake
 # Recommended to read all the scripts top to bottom.
-less setup.sh
-less install_system.sh
+cat setup.sh
+cat install_system.sh
 # And so on
 ```
 
 ## Review the Scripts (RECOMMENDED!):
 
 Take a good look at setup.sh and any sub-scripts (like install_system.sh, install_apps.sh, setup_docker.sh) to see what they'll do. Never run scripts you don't trust!
+
 ## Make Scripts Executable:
 
 ```bash
@@ -77,7 +78,10 @@ Here's the rundown:
 | Wget        | Utility             | Another staple tool                     |
 | KeePassXC   | Password            | An Open-source password manager         |
 | RPM Fusion  | Software Collection | Multimedia codecs, drivers              |
-
+| btop        | System Monitor      | View system resources                   |
+| tldr        | Command manual      | Community-driven manual                 |
+| ffmpeg      | Video/Audio tool    | Tool for video and audio processing     |
+| python3-pip | Dev                 | Package manager for python              |
 
 2. And Some Desktop Apps:
 
@@ -86,12 +90,14 @@ Here's the rundown:
 | VLC           | Media           | Videoplayer                            |
 | Discord       | Social          | For chatting                           |
 | Brave Browser | Browser         | Preferred Browser                      |
-| Sublime       | Text Editor     | Easy to use text editor                |
 | Neovim        | Text Editor/IDE | Not so easy to use text editor and IDE |
-| Micro         | Text Editor     | Lightweight text editor                |
 | Steam         | Gaming          | Hub for games                          |
 | Moonlight     | Streaming       | Streaming games throughout network     |
 | Obsidian      | Notes           | Note-taking app                        |
+| qBitTorrent   | Torrent         | Torrent client                         |
+| GIMP          | Editor          | Image editor                           |
+| OBS           | Video capture   | Software for recording                 |
+
 
 3. Containerization:
 
@@ -128,7 +134,7 @@ Run docker compose up -d to start the stack in the background.
 | qBittorrent    | P2P Torrent client with VPN capabilities |
 | Jellyseerr     | Manages requests and monitors Jellyfin   |
 | Jackett        | Index manager for Sonarr and Radarr      |
-*(interesting services to add: Readarr, Lidarr, Kapowarr, Gluetun, Tdarr, Bazarr, Flaresolverr, Homarr*
+*interesting services to add: Readarr, Lidarr, Kapowarr, Gluetun, Tdarr, Bazarr, Flaresolverr, Homarr*
 
 - Navidrome: (in ~/homelab-docker/navidrome/) - Music Streaming Server.
 - Immich: (in ~/homelab-docker/immich/) - Self-hosted photos.

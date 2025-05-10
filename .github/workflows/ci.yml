@@ -1,0 +1,78 @@
+# .github/workflows/ci.yml
+# https://docs.github.com/en/actions/using-github-hosted-runners/using-github-hosted-runners/about-github-hosted-runners
+# https://docs.github.com/en/actions/writing-workflows/choosing-what-your-workflow-does/running-variations-of-jobs-in-a-workflow
+
+name: Homey-Shake CI
+
+on:
+  push:
+    branches:
+      - main
+      - 'feature/**'
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  lint:
+    name: ShellCheck Linting
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install ShellCheck
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y shellcheck
+
+      - name: Run ShellCheck on scripts
+        run: shellcheck -x *.sh helpers.sh tests/*.sh
+
+# Matrix will be in charge of running the --system, --apps, --dev flags
+# as separate test runs. --all might run too slow for now, but will eventually
+# get added. 
+
+  test-installations:
+    name: Test Installation (Stage ${{ matrix.stage }})
+    runs-on: ubuntu-latest
+    needs: lint
+
+    strategy:
+      fail-fast: false
+      matrix:
+        stage:
+          - "--system"
+          - "--apps"
+          - "--dev"
+            # TODO: add --all when build is more stable.
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Prepare Test Environment
+        run: |
+          sudo apt-get update
+          # Install any immediate dependencies for the runner or homey-shake on Ubuntu if not already present.
+          # Getting python3-pip is necessary for cookiecutter, however it might get scrapped from the project.
+          sudo apt-get install -y lsb-release python3-pip # Pip for cookiecutter's dep, lsb-release for helpers
+          # Add Flathub for Flatpak tests (install_apps.sh also does this, but good to ensure)
+          sudo apt-get install -y flatpak
+          flatpak remote-add --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo
+
+      - name: Run homey-shake installation test for stage ${{ matrix.stage }}
+        run: ./tests/run_installation_test.sh "${{ matrix.stage }}"
+
+      - name: Check installed Docker version (if dev stage was run)
+        if: matrix.stage == '--dev' || matrix.stage == '--all'
+        run: docker --version
+
+      - name: Check installed Flatpak apps (if apps stage was run)
+        if: matrix.stage == '--apps' || matrix.stage == '--all'
+        run: flatpak list
+
+# TODO(?): It could be possible to make these tests run on a Fedora container
+# inside the Ubuntu runner. Running a DinD, checking if it can run hello-world
+# and trying to get a Fedora docker image inside the Ubuntu runner, but might be
+# too complicated luls. 
