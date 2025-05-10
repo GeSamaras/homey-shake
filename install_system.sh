@@ -39,8 +39,6 @@ if [ "$DISTRO" == "fedora" ]; then
     # RPM Fusion Free
     if ! check_package rpmfusion-free-release; then
         info "Adding RPM Fusion Free repository..."
-        # shellcheck warning: Quoting this command substitution to prevent word splitting or 
-        # formatting errors with the output. 
         if $PKG_MANAGER install -y \
             https://download1.rpmfusion.org/free/fedora/rpmfusion-free-release-"$(rpm -E %fedora)".noarch.rpm; then
             info "RPM Fusion Free repo added."
@@ -54,7 +52,6 @@ if [ "$DISTRO" == "fedora" ]; then
     # RPM Fusion Non-Free
     if ! check_package rpmfusion-nonfree-release; then
         info "Adding RPM Fusion Non-Free repository..."
-        # Another shellcheck warning
         if $PKG_MANAGER install -y \
             https://download1.rpmfusion.org/nonfree/fedora/rpmfusion-nonfree-release-"$(rpm -E %fedora)".noarch.rpm; then
             info "RPM Fusion Non-Free repo added."
