@@ -12,7 +12,7 @@ cd "$(dirname "$0")/.."
 chmod +x *.sh
 
 info "Running: ./setup.sh $SETUP_FLAG -y"
-if ! ./setup.sh "$SETUP_FLAG" -y; then
+if ! sudo ./setup.sh "$SETUP_FLAG" -y; then
     error "Homey-shake setup script failed for stage $SETUP_FLAG"
     exit 1
 fi
@@ -34,11 +34,11 @@ fi
 if [[ "$SETUP_FLAG" == *"--apps"* ]] || [[ "$SETUP_FLAG" == *"--all"* ]]; then
     info "--- Verifying App Tools ---"
     check_command flatpak || (error "flatpak not found" && exit 1)
-    if ! flatpak remote-list | grep -q '^flathub\s'; then error "Flathub remote not found" && exit 1; fi
-    check_flatpak_app com.brave.Browser || (error "Brave (Flatpak) not found" && exit 1)
-    check_flatpak_app io.github.zyedidia.micro || (error "Micro (Flatpak) not found" && exit 1)
-    check_flatpak_app org.gimp.GIMP || (error "GIMP (Flatpak) not found" && exit 1)
-    check_flatpak_app com.obsproject.Studio || (error "OBS (Flatpak) not found" && exit 1)
+    if ! sudo flatpak remote-list | grep -q '^flathub\s'; then error "Flathub remote not found" && exit 1; fi
+    sudo check_flatpak_app com.brave.Browser || (error "Brave (Flatpak) not found" && exit 1)
+    sudo check_flatpak_app io.github.zyedidia.micro || (error "Micro (Flatpak) not found" && exit 1)
+    sudo check_flatpak_app org.gimp.GIMP || (error "GIMP (Flatpak) not found" && exit 1)
+    sudo check_flatpak_app com.obsproject.Studio || (error "OBS (Flatpak) not found" && exit 1)
     check_command qbittorrent || (error "qbittorrent not found" && exit 1)
     # TODO: Might difficult to verify full suite easily, could see a workaround or remove it. 
     check_command libreoffice || (error "libreoffice command not found" && exit 1)

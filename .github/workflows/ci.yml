@@ -49,7 +49,7 @@ jobs:
             - name: Prepare Test Environment
               run: |
                   sudo apt-get update
-                  sudo apt-get install -y lsb-release python3-pip flatpak
+                  sudo apt-get install -y lsb-release python3-pip flatpak virt-manager
                   sudo flatpak remote-add --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo
 
             - name: Run homey-shake installation test for stage ${{ matrix.stage }}
