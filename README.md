@@ -145,7 +145,7 @@ Run docker compose up -d to start the stack in the background.
 
 ### Future Plans:
 
-- [ ] Automatic testing, Github Actions, CI/CD
+- [X] Automatic testing, Github Actions, CI/CD
 - [ ] Ricing maybe?
 - [ ] Better setup for docker compose.
 - [ ] Graphical flair, coloring, better readability and formatting.

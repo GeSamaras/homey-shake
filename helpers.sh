@@ -117,7 +117,7 @@ install_flatpak_package() {
         info "Flatpak: $app_id already installed. Skipping."
     else
         info "Attempting to install Flatpak package $app_id..."
-        if flatpak install flathub -y "$app_id"; then
+        if flatpak install flathub "$app_id"; then
             info "Flatpak: $app_id installed successfully."
         else
             error "Failed to install Flatpak: $app_id."
