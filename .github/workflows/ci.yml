@@ -32,7 +32,6 @@ jobs:
     test-installations:
         name: Test Installation (Stage ${{ matrix.stage }})
         runs-on: ubuntu-latest
-        # Removed 'needs: lint' so this job runs independently or in parallel
 
         strategy:
             fail-fast: false
@@ -54,7 +53,9 @@ jobs:
                   sudo flatpak remote-add --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo
 
             - name: Run homey-shake installation test for stage ${{ matrix.stage }}
-              run: ./tests/run_installation_test.sh "${{ matrix.stage }}"
+              run: |
+                chmod +x ./tests/run_installation_test.sh 
+                ./tests/run_installation_test.sh "${{ matrix.stage }}"
 
             - name: Check installed Docker version (if dev stage was run)
               if: success() && (matrix.stage == '--dev' || matrix.stage == '--all')
