@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# --- Main Setup Script for homey-shake ---
+# --- Main Setup Script for togeprii ---
 
 # Ensure helper functions are sourced first for messages
 # Handle potential errors if helpers.sh is missing
@@ -10,6 +10,61 @@ else
     echo "ERROR: helpers.sh not found. Cannot continue." >&2
     exit 1
 fi
+
+
+TOGEPRII_ASCII_ART=$(cat <<'EOF'
+                                                       +++
+                                                     ;;;;;++
+                                                   +;;;;;;;+++
+                                                 +;;;;;;;;;;;+;
+                                                ;;;;;;;;;;;;;;++
+                                              +;;;;;;;;;;;;;;;;++
+                                             ;;;;;;;;;;;;;;;;;;;;+
+                                            ;;;;;;;;;;;;;;;;;;;;;;+;
+                                           ;;;;;;;;;;;;;;;;;;;;;;;;++
+                                         +;;;;;;;;;;;;;;;;;;;;;;;;;;++
+                                 xxx    +;;;;;;;;;;;;;;;;;;;;;;;;;;;;+;
+         +++++x                 x+++++x+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;++;            xx
+         ++;;;;;+++++           ++xxxx++;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;++     +++++++x++
+         ++;;;;;;;;;;;++++     ;+xxxx++;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;+++x+++++++++x++     +;;;;;;;+;;;;;;++++
+          +;;;;;;;;;;;;;;;;+++x+xx++x+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;++;;+++xx+++xxx+;;;;;;;;;;;;;;;;;;;;++x+
+          x+;;;;;;;;;;;;;;;;;;;++++++;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;++++x+;;;;;;;;;;;;;;;;;;;;;;;;;;;+++++
+           x+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;++++++
+           x+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;++++++x+
+            x+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;++++++xx:
+             x+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;++++++++x+
+              ++;;;;;;;;;;;;;;;;;;;;;;;;+XX+Xx;;;;;;;;;;;;;;xx+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;+++++++++x;
+              +++;;;;;;;;;;;;;;;;;;;;;;;xx;;++;;;;;;;;;;;;xx;;+X;;;;;;;;;;;;;;;;;;;;;;;;;;;;+++++++++xx:
+               +++;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;++++++++++x+
+               +++;;;;;;;;;;;;;;;;;;;;;;;;;;;;;+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;++++++++++++x+
+                x++;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;++++;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;+++++++++++++x;:
+                x+++;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;++++++++++++++;
+                +++++;;;+++;++;;;;;;;;;;;;;xxxxxxxx+;;;;;;;;;;;;;;;;;;;;;;+++;++;;;++++++++++++x+;
+            ;;+x+++++;++;;;;;;++;;;;;;;;;+xxxxxxxxxxXXX++;;;;;;;;;;;;;;++;;;+xxXX+;++++++++++++++
+          ;;;;;;+x++x+;;+xXXxx+xxx+++;;;xXxxxxxxxxxXXXX;;++;;;;;;;;;++;xXXXXXXXXXXx+++++++++++xxxx
+         ;;;;;;;;;+++++;;;;;;;;;;;;;;;;+XxxxxxxxxxxXXx+++++++++++++++++xX$$x+++XXXXXx++++++xx+++++xXxx
+        ;;;;;;;;;;;+;;;;;;;;;;;;;;;;;;;+xxxxxxxxxx+;;;;;;;;;;;;;;;;;;;;;;;;+++xXXXX+++++xx++++++++++++x
+       +;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;xXXXXXXXXXX+;;;;;;;;;;;;;;;;;;;;;;;;;;;;+XX+;;;++++++++++++++++++
+       ;;;;;;;;;;;+;;;;;;;;;;;;;;;;;++;;;xXXXXXXXXXX+;;;;;;;;;;;;;;;;;;;;;;;;;;;++;;;;;++++++++++++++++x;
+      ;;;;;;;;;;;;+;;;;;;;;;;;;+++;;;;;;;;;;;++xxx+;;;++;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;++++++++++++++++++
+      ;;;;;;;;;;;;;;;;;;;+++++;;;;;;;;;;;;;;;;;;;;;;;;;;;++;;;;;;;;;;;;;;;;;;;;;+;;;;;;+++++++++++++++++++
+      ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;++;;;;;;;;;;;;;;;;++;;;;;;+++++++++++++++++++
+     ;;;;;+xxx+;+xxXXxx+;;;;;;;;;;;;;++;;;;;;;;;;;;;;;;;;;;;;;;;++++;;;;;;;;;++;;;;;;;+++++++++++++++++++x;
+     ++xxxx+;;+xXXXXXxxxx;;;;;;;;;;xxxxxxxx+;;;;;;;;;;;;;;;;;;;;;;;;;++++++++;;;;;;;;;+++++++++++++++++++++
+                 xXXXXXXXX;;;;;;;;xxxxxxxxxxxxx+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;+++++++++++++++++++++
+                   XXXX+;+x+;;;;+xXXXXxxxxxxxxxxxx+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;++++++++++++++++++++++
+                    XXXxx+:+XXXXXXXXxxxXXxxxxxxxxxxxx+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;++++++++++++++++++++++
+                     XXXXXxXXXXXXXXXxxxxxX$XXXXXXXXxxxxx+;;;;;;;;;;;;;;;;;;;;;;;;;;;;++++++;;;;+x+++++++++x
+                             +xxXXXXXXxXX$XXXXxxxxxxXxxxxxx+;;;;;;;;;;;;;;;;;;;;;;;;+++;;;+++++xx+x+++++++x
+                                         ;xXXXXXxxx+xXXxxxxxx+;;;;;;;;;;;;;;;;;;;+++;;;++++++++xx++x++++++x
+                                                  xXXXXXxxxxxxx+;;;;;;;;;;;;;;;;;;;;;++++++++++++++++++++++
+EOF
+)
+
+clear # Optional: Clears the screen for a clean intro
+echo -e "${BYellow}$TOGEPRII_ASCII_ART${Color_Off}"
+echo -e "${BWhite}Welcome to the togeprii!${Color_Off}"
+echo -e "${Cyan}Please remember to read the script and hydrate!${Color_Off}\n"
 
 # --- Argument Parsing with getopts ---
 
@@ -87,15 +142,18 @@ fi
 
 # --- Start Setup ---
 
-info "Starting Homey-Shake Setup Process..."
-warn "This script will install/configure software based on selected flags."
-warn "System: $run_system, Apps: $run_apps, Dev: $run_dev, Docker Dirs: $run_docker_dirs"
-warn "Assume Yes: $assume_yes"
+info "Welcome to Togeprii!"
+echo -e "${BWhite}Selected Stages:${Color_Off}"
+[ "$run_system" = true ] && echo -e "  ${Yellow}- System Packages${Color_Off}"
+[ "$run_apps" = true ] && echo -e "  ${Yellow}- Desktop Applications${Color_Off}"
+[ "$run_dev" = true ] && echo -e "  ${Yellow}- Development Tools${Color_Off}"
+[ "$run_docker_dirs" = true ] && echo -e "  ${Yellow}- Docker Directories${Color_Off}"
+echo
 
 # Check for sudo privileges early if any stage requiring it is selected
 if $run_system || $run_apps || $run_dev; then
     if [ "$EUID" -ne 0 ]; then # Check if already root
-        info "Checking sudo privileges..."
+        step_info "Checking sudo privileges..."
         if ! sudo -v; then
              error "Sudo privileges are required but could not be obtained. Exiting."
              exit 1
@@ -109,7 +167,8 @@ fi
 
 # Confirmation Prompt (unless -y is used)
 if [ "$assume_yes" = false ]; then
-    read -p "Do you want to proceed with the selected stages? (y/N): " confirm
+    echo -e -n "${BYellow}Do you want to proceed with the selected stages? (y/N): ${Color_Off}"
+    read -r confirm
     if [[ ! "$confirm" =~ ^[yY](es)?$ ]]; then
         info "Setup cancelled by user."
         exit 0
@@ -123,9 +182,9 @@ fi
 set -e
 
 if [ "$run_system" = true ]; then
-    info "--- Executing Stage: System Package Installation ---"
+    stage_header "🌟 System package installation 🌟"
     if bash ./install_system.sh; then
-         info "--- Stage Complete: System ---"
+         info "Stage Complete"
     else
          error "Stage Failed: System Package Installation. Exiting."
          exit 1
@@ -133,9 +192,9 @@ if [ "$run_system" = true ]; then
 fi
 
 if [ "$run_apps" = true ]; then
-    info "--- Executing Stage: Desktop Application Installation ---"
+    stage_header "🌟 Desktop apps installation 🌟"
      if bash ./install_apps.sh; then
-         info "--- Stage Complete: Apps ---"
+         info "Stage Complete"
     else
          error "Stage Failed: Desktop Application Installation. Exiting."
          exit 1
@@ -143,9 +202,9 @@ if [ "$run_apps" = true ]; then
 fi
 
 if [ "$run_dev" = true ]; then
-    info "--- Executing Stage: Development Tools Installation ---"
+    stage_header "🌟 Development tools 🌟"
     if bash ./install_dev_tools.sh; then
-         info "--- Stage Complete: Dev Tools ---"
+         info "Stage Complete"
     else
          error "Stage Failed: Development Tools Installation. Exiting."
          exit 1
@@ -153,9 +212,9 @@ if [ "$run_dev" = true ]; then
 fi
 
 if [ "$run_docker_dirs" = true ]; then
-    info "--- Executing Stage: Docker Directory Setup ---"
+    stage_header "🌟 Docker directories 🌟"
     if bash ./setup_docker_dirs.sh; then
-         info "--- Stage Complete: Docker Dirs ---"
+         info "Stage Complete"
     else
          error "Stage Failed: Docker Directory Setup. Exiting."
          exit 1
@@ -164,23 +223,22 @@ fi
 
 # --- Final Instructions ---
 
-info "--- Homey-Shake Setup Script Finished ---"
-if $run_dev; then # Only show Docker warning if dev tools were installed
-    warn "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
-    warn "!!! IMPORTANT: If Docker was installed or user added to group, you MUST    !!!"
-    warn "!!! reboot or log out and log back in for changes to take effect.        !!!"
-    warn "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
+echo -e "\n${BGreen}>>> togeprii Setup Script Finished <<<${Color_Off}"
+if $run_dev; then
+    warn "              + ~~+    |         .       .-.         '        |          * "
+    warn "${BWhite}IMPORTANT:${Color_Off} If Docker or Virtualization tools were installed, or user added"
+    warn "to 'docker' or 'libvirt' groups, you ${BRed}MUST reboot or log out and log back in${Color_Off}"
+    warn "for changes to take effect.                                              "
+    warn " +'       -o-   .       ' .      +.                                    *  ."
 fi
-if $run_docker_dirs; then # Only show Docker compose warning if dirs were set up
-    warn "After logging back in (if needed):"
-    warn " - Review and customize docker-compose.yml files in ~/homelab-docker/*/"
-    warn " - Run 'docker compose up -d' in each service directory to start containers."
+if $run_docker_dirs; then
+    step_info "After logging back in (if needed):"
+    step_info "- Review and customize ${Cyan}docker-compose.yml${Color_Off} files in ${Cyan}~/homelab-docker/*/ ${Color_Off}"
+    step_info "- Run '${Cyan}docker compose up -d${Color_Off}' in each service directory to start containers."
 fi
-if $run_apps && ! check_directory "$HOME/.oh-my-zsh"; then # If apps were run but OMZ failed/skipped
-     # This condition might be tricky if OMZ install fails silently
-     : # Maybe add a more specific check later
-elif $run_apps; then
-     warn " - Oh My Zsh might require you to type 'zsh' or set it as default shell ('chsh -s $(which zsh)')."
+if $run_apps; then
+     step_info "- Oh My Zsh might require you to type '${Cyan}zsh${Color_Off}' or set it as default shell ('${Cyan}chsh -s \$(which zsh)${Color_Off}')."
 fi
+echo -e "${BGreen}All done! Enjoy your togeprii-enhanced setup! ✨${Color_Off}"
 
 exit 0

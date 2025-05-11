@@ -13,7 +13,7 @@ chmod +x *.sh
 
 info "Running: ./setup.sh $SETUP_FLAG -y"
 if ! sudo ./setup.sh "$SETUP_FLAG" -y; then
-    error "Homey-shake setup script failed for stage $SETUP_FLAG"
+    error "togeprii setup script failed for stage $SETUP_FLAG"
     exit 1
 fi
 

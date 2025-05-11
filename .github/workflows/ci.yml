@@ -2,7 +2,7 @@
 # https://docs.github.com/en/actions/using-github-hosted-runners/using-github-hosted-runners/about-github-hosted-runners
 # https://docs.github.com/en/actions/writing-workflows/choosing-what-your-workflow-does/running-variations-of-jobs-in-a-workflow
 
-name: Homey-Shake CI
+name: togeprii CI
 
 on:
     push:
@@ -52,7 +52,7 @@ jobs:
                   sudo apt-get install -y lsb-release python3-pip flatpak virt-manager
                   sudo flatpak remote-add --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo
 
-            - name: Run homey-shake installation test for stage ${{ matrix.stage }}
+            - name: Run togeprii installation test for stage ${{ matrix.stage }}
               run: |
                 chmod +x ./tests/run_installation_test.sh 
                 ./tests/run_installation_test.sh "${{ matrix.stage }}"

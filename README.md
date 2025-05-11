@@ -1,4 +1,4 @@
-# homey-shake
+# togeprii
 
 This repo helps you quickly set up a fresh Linux install (Fedora KDE and Mint tested) for development, media, and homelab tinkering. These are tools i personally use and want in my system by default. So, while the configurations might not be pristine and standardized, the point is to get a new machine up and running with all the useful stuff i personally want (bloat🤠). It uses a mix of bash scripts and Docker to get everything installed and configured, and i highly encourage for you to add and tweak your own fork with things you like! 
 
@@ -31,8 +31,8 @@ By the way, throughout this project i warn caution when running any script, howe
 ```bash
 # First, make sure git is installed
 sudo dnf install -y git
-git clone https://github.com/GeSamaras/homey-shake.git ~/homey-shake
-cd ~/homey-shake
+git clone https://github.com/GeSamaras/togeprii.git ~/togeprii
+cd ~/togeprii
 # Recommended to read all the scripts top to bottom.
 cat setup.sh
 cat install_system.sh
