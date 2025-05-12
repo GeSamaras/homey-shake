@@ -148,6 +148,7 @@ Run docker compose up -d to start the stack in the background.
 - [X] Automatic testing, Github Actions, CI/CD
 - [ ] Ricing maybe?
 - [ ] Better setup for docker compose.
-- [ ] Graphical flair, coloring, better readability and formatting.
+- [X] Graphical flair, coloring, better readability and formatting.
 - [ ] Interactive UI.
+- [ ] Setup Go, TS and Python environment.
 - [ ] Finding a way to setup Wazuh and ELK Stack agents.

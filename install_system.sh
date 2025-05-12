@@ -29,6 +29,8 @@ install_package tldr
 install_package yt-dlp
 install_package python3-pip
 install_package ffmpeg
+install_package python3
+install_package python3-pip
 
 # --- Distro-Specific Repo Setups ---
 if [ "$DISTRO" == "fedora" ]; then

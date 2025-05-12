@@ -171,14 +171,77 @@ if [ "$DISTRO" == "fedora" ]; then
     fi
 
 elif [ "$DISTRO" == "debian" ]; then
-    # Placeholder for Debian/Ubuntu KVM setup
-    warn "QEMU/KVM/virt-manager automatic setup for Debian/Ubuntu is not implemented yet."
-    # Steps would involve:
-    # sudo apt install qemu-kvm libvirt-daemon-system libvirt-clients bridge-utils virt-manager -y
-    # sudo adduser $USER libvirt
-    # sudo adduser $USER libvirt-qemu # Often needed too
-    # Check service: libvirtd
-    # Check group: libvirt
+    step_info "Installing QEMU/KVM, libvirt, and virt-manager (Debian/Ubuntu)..."
+    # Check if KVM can be used (CPU virtualization support)
+    if ! egrep -c '(vmx|svm)' /proc/cpuinfo > /dev/null; then
+        warn "CPU does not support KVM virtualization (vmx or svm flag not found). virt-manager might run, but KVM acceleration will not be available."
+    else
+        success "CPU supports KVM virtualization."
+    fi
+
+    install_package qemu-kvm
+    install_package libvirt-daemon-system
+    install_package libvirt-clients
+    install_package bridge-utils
+    install_package virt-manager
+
+    # Enable and start the libvirt daemon service
+    LIBVIRT_SERVICE="libvirtd" # libvirtd on Debian/Ubuntu too
+    if command -v systemctl &> /dev/null; then # systemd is standard
+        if systemctl list-unit-files | grep -q "^${LIBVIRT_SERVICE}.service"; then
+            if ! systemctl is-active --quiet "$LIBVIRT_SERVICE"; then
+                step_info "Starting $LIBVIRT_SERVICE service..."
+                sudo systemctl start "$LIBVIRT_SERVICE"
+            else
+                step_info "$LIBVIRT_SERVICE service is already active."
+            fi
+            if ! systemctl is-enabled --quiet "$LIBVIRT_SERVICE"; then
+                step_info "Enabling $LIBVIRT_SERVICE service..."
+                sudo systemctl enable "$LIBVIRT_SERVICE"
+            else
+                step_info "$LIBVIRT_SERVICE service is already enabled."
+            fi
+        else
+            error "$LIBVIRT_SERVICE.service not found. Virtualization setup may be incomplete."
+        fi
+    else
+        warn "systemctl not found. Cannot manage $LIBVIRT_SERVICE automatically."
+    fi
+
+
+    # Add user to the libvirt and kvm groups
+    LIBVIRT_GROUP="libvirt"
+    KVM_GROUP="kvm" # KVM group is also common/needed on Debian/Ubuntu
+
+    # Add to libvirt group
+    if ! id -nG "$USER" | grep -qw "$LIBVIRT_GROUP"; then
+        step_info "Adding user $USER to the $LIBVIRT_GROUP group..."
+        sudo usermod -aG "$LIBVIRT_GROUP" "$USER"
+        if [ $? -eq 0 ]; then
+             warn "User $USER added to $LIBVIRT_GROUP group. You MUST log out and log back in or reboot!"
+        else
+             error "Failed to add user $USER to $LIBVIRT_GROUP group."
+        fi
+    else
+        step_info "User $USER is already in the $LIBVIRT_GROUP group."
+    fi
+
+    # Add to kvm group (if it exists, some setups might not strictly need this if libvirt is set up for qemu:///system)
+    if getent group "$KVM_GROUP" &>/dev/null; then
+        if ! id -nG "$USER" | grep -qw "$KVM_GROUP"; then
+            step_info "Adding user $USER to the $KVM_GROUP group..."
+            sudo usermod -aG "$KVM_GROUP" "$USER"
+            if [ $? -eq 0 ]; then
+                warn "User $USER added to $KVM_GROUP group. You MUST log out and log back in or reboot!"
+            else
+                error "Failed to add user $USER to $KVM_GROUP group."
+            fi
+        else
+            step_info "User $USER is already in the $KVM_GROUP group."
+        fi
+    else
+        step_info "Group '$KVM_GROUP' does not exist. Skipping adding user to it."
+    fi
 fi
 
 info "--- Virtualization Setup Complete ---"

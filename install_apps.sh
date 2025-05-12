@@ -13,8 +13,6 @@ install_package qbittorrent
 
 # --- Install using specific Repositories (Idempotent) ---
 
-
-
 # --- Visual Studio Code ---
 info "Setting up Visual Studio Code..."
 if ! check_command code; then # Check if 'code' command exists
@@ -34,8 +32,18 @@ if ! check_command code; then # Check if 'code' command exists
         # Install the package
         install_package code
     elif [ "$DISTRO" == "debian" ]; then
-        # Placeholder for Debian/Ubuntu - requires different repo setup steps
-        warn "VS Code automatic setup for Debian/Ubuntu is not implemented yet."
+        # https://code.visualstudio.com/docs/setup/linux#_debian-and-ubuntu-based-distributions
+		if ! check_command "code"; then
+			 info "Adding VS Code (Debian)..."
+			 sudo apt-get install wget gpg
+			 wget -qO- https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor > packages.microsoft.gpg
+			 sudo install -D -o root -g root -m 644 packages.microsoft.gpg /etc/apt/keyrings/packages.microsoft.gpg
+			 echo "deb [arch=amd64,arm64,armhf signed-by=/etc/apt/keyrings/packages.microsoft.gpg] https://packages.microsoft.com/repos/code stable main" |sudo tee /etc/apt/sources.list.d/vscode.list > /dev/null
+			 rm -f packages.microsoft.gpg
+			 sudo apt install apt-transport-https
+			 sudo apt update
+			 sudo apt install code
+		fi
     fi
 else
     info "VS Code command 'code' found. Skipping setup."
