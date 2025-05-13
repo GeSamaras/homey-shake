@@ -225,11 +225,9 @@ fi
 
 echo -e "\n${BGreen}>>> togeprii Setup Script Finished <<<${Color_Off}"
 if $run_dev; then
-    warn "              + ~~+    |         .       .-.         '        |          * "
     warn "${BWhite}IMPORTANT:${Color_Off} If Docker or Virtualization tools were installed, or user added"
     warn "to 'docker' or 'libvirt' groups, you ${BRed}MUST reboot or log out and log back in${Color_Off}"
     warn "for changes to take effect.                                              "
-    warn " +'       -o-   .       ' .      +.                                    *  ."
 fi
 if $run_docker_dirs; then
     step_info "After logging back in (if needed):"

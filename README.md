@@ -83,7 +83,7 @@ Here's the rundown:
 | ffmpeg      | Video/Audio tool    | Tool for video and audio processing     |
 | python3-pip | Dev                 | Package manager for python              |
 
-2. And Some Desktop Apps:
+## And Some Desktop Apps:
 
 | Name          | Category        | Notes                                  |
 | ------------- | --------------- | -------------------------------------- |
@@ -99,19 +99,20 @@ Here's the rundown:
 | OBS           | Video capture   | Software for recording                 |
 
 
-3. Containerization:
+## Development & Containerization
+Docker Engine, CLI, Compose (via official script)
+Adds user to `docker` group (requires re-login)
+QEMU/KVM, libvirt, virt-manager (Virtualization tools)
+Adds user to `libvirt` group (requires re-login)
+**Golang** (Official binary release) - *Requires manual PATH/GOPATH setup in shell config*
+**Node.js (via nvm) & npm** (Latest LTS) - *Requires sourcing shell config or new terminal*
+**TypeScript** (Global npm package)
+**Rust (via rustup)** - *Requires sourcing shell config or new terminal*
+cookiecutter (Python project templating tool - via pip)
 
-- **Docker**:
-    - Docker Engine
-    - Docker CLI
-    - Docker Compose (v2+)
-
-(Installs Docker Desktop for Linux, which bundles these)
-
-Adds your user to the docker group (requires re-login!).
 
 
-4. Docker Containers / Stacks (via Docker Compose):
+## Docker Containers / Stacks (via Docker Compose):
 
 **Location**: Compose files (docker-compose.yml) and configurations will be placed in ~/homelab-docker/ by default.
 
@@ -146,9 +147,8 @@ Run docker compose up -d to start the stack in the background.
 ### Future Plans:
 
 - [X] Automatic testing, Github Actions, CI/CD
-- [ ] Ricing maybe?
-- [ ] Better setup for docker compose.
+- [X] Better setup for docker compose.
 - [X] Graphical flair, coloring, better readability and formatting.
 - [ ] Interactive UI.
-- [ ] Setup Go, TS and Python environment.
+- [X] Setup Go, TS and Python environment.
 - [ ] Finding a way to setup Wazuh and ELK Stack agents.

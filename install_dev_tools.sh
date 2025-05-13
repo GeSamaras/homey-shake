@@ -273,4 +273,156 @@ else
 fi
 
 
+# --- Golang Installation ---
+step_info "Setting up Golang..."
+GO_VERSION="1.24.3"
+GO_INSTALL_DIR="/usr/local/go"
+GO_TARBALL="go${GO_VERSION}.linux-amd64.tar.gz"
+GO_URL="https://golang.org/dl/${GO_TARBALL}"
+
+if ! check_command go || ! (go version 2>/dev/null | grep -q "go${GO_VERSION}"); then
+    if check_directory "$GO_INSTALL_DIR"; then
+        step_info "Found existing Go installation at $GO_INSTALL_DIR. Removing to install version $GO_VERSION..."
+        sudo rm -rf "$GO_INSTALL_DIR" # Ensure clean install of specific version
+    fi
+
+    step_info "Downloading Go v${GO_VERSION}..."
+    if curl -fsSL "$GO_URL" -o "/tmp/${GO_TARBALL}"; then
+        step_info "Extracting Go to $GO_INSTALL_DIR..."
+        sudo tar -C /usr/local -xzf "/tmp/${GO_TARBALL}"
+        rm "/tmp/${GO_TARBALL}"
+
+        # Add Go to PATH for all users (if not already there for /usr/local/go/bin)
+        # This is often handled by default PATH including /usr/local/bin,
+        # and /usr/local/go/bin should be in PATH or symlinked.
+        # For immediate use in current shell (and for .bashrc/.zshrc hints):
+        # export PATH=$PATH:/usr/local/go/bin
+        # export GOPATH=$HOME/go
+        # export PATH=$PATH:$GOPATH/bin
+
+        if check_command go && (go version | grep -q "go${GO_VERSION}"); then
+            success "Golang v${GO_VERSION} installed to $GO_INSTALL_DIR."
+            warn "You may need to add ${BCyan}/usr/local/go/bin${Color_Off} to your PATH if not already present."
+            warn "Consider setting ${BCyan}GOPATH${Color_Off} (e.g., export GOPATH=\$HOME/go) and adding ${BCyan}\$GOPATH/bin${Color_Off} to PATH in your shell config (.bashrc, .zshrc)."
+        else
+            error "Golang installation failed or version mismatch."
+        fi
+    else
+        error "Failed to download Golang."
+    fi
+else
+    step_info "Golang v${GO_VERSION} or newer already installed."
+    go version
+fi
+
+# --- Node.js (via nvm) & TypeScript ---
+step_info "Setting up Node.js (via nvm) and TypeScript..."
+export NVM_DIR="$HOME/.nvm" # Set NVM_DIR explicitly
+
+# Install nvm if not already installed
+# Check for nvm command by trying to source its script
+if ! ( [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh" && command -v nvm &>/dev/null ); then
+    step_info "nvm not found. Installing nvm..."
+    # Download and run nvm install script
+    # Check for curl
+    if check_command curl; then
+        curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh | bash # Check for latest nvm version
+        # Source nvm script for current session
+        if [ -s "$NVM_DIR/nvm.sh" ]; then
+            # shellcheck source=/dev/null
+            . "$NVM_DIR/nvm.sh"
+            # shellcheck source=/dev/null
+            . "$NVM_DIR/bash_completion"
+            success "nvm installed. Please source your shell config (e.g., 'source ~/.bashrc') or open a new terminal."
+        else
+            error "nvm installation script ran, but nvm.sh not found in $NVM_DIR."
+        fi
+    else
+        error "curl is required to install nvm. Please install curl."
+    fi
+else
+    step_info "nvm is already installed."
+    # Ensure nvm is sourced if script is re-run in same non-login shell
+    if [ -s "$NVM_DIR/nvm.sh" ] && ! command -v nvm &>/dev/null; then
+        # shellcheck source=/dev/null
+        . "$NVM_DIR/nvm.sh"
+    fi
+fi
+
+# Install Node.js LTS if nvm is available
+if command -v nvm &> /dev/null; then
+    # Check if any node version is installed, if not, install LTS
+    if ! nvm list | grep -q "node"; then # A simple check
+        step_info "No Node.js version found via nvm. Installing latest LTS..."
+        if nvm install --lts; then
+            nvm alias default 'lts/*' # Set LTS as default
+            nvm use default
+            success "Node.js LTS installed and set as default via nvm."
+            node -v
+            npm -v
+        else
+            error "Failed to install Node.js LTS via nvm."
+        fi
+    else
+        step_info "Node.js appears to be installed via nvm. Current versions:"
+        nvm current || echo " (no default alias set)"
+        node -v || echo " (node not in current PATH)"
+        npm -v || echo " (npm not in current PATH)"
+    fi
+
+    # Install TypeScript globally if Node/npm is available
+    if command -v npm &> /dev/null; then
+        if ! command -v tsc &> /dev/null; then
+            step_info "Installing TypeScript globally via npm..."
+            if sudo npm install -g typescript; then # Install globally for tsc command
+                success "TypeScript installed globally."
+                tsc --version
+            else
+                error "Failed to install TypeScript globally."
+            fi
+        else
+            step_info "TypeScript (tsc) command found. Assuming it's installed."
+            tsc --version
+        fi
+    else
+        warn "npm not found. Cannot install TypeScript globally."
+    fi
+else
+    warn "nvm command not available. Skipping Node.js and TypeScript installation via nvm."
+fi
+
+# --- Rust Installation (via rustup) ---
+step_info "Setting up Rust..."
+RUSTUP_CARGO_HOME="$HOME/.cargo" # Default rustup installation path
+
+if ! check_command rustc || ! check_command cargo; then
+    step_info "Rust (rustc/cargo) not found. Installing via rustup..."
+    # Check for curl
+    if check_command curl; then
+        # Download and run rustup-init.sh non-interactively with default options
+        curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --no-modify-path
+        # The --no-modify-path is used because we will source the env file next.
+        # Alternatively, let it modify path and warn user to source.
+
+        # Source cargo env for current session (rustup usually adds this to .profile or .bashrc/.zshrc)
+        if [ -f "$RUSTUP_CARGO_HOME/env" ]; then
+            # shellcheck source=/dev/null
+            source "$RUSTUP_CARGO_HOME/env"
+            success "Rust installed via rustup."
+            rustc --version
+            cargo --version
+            warn "Rust environment sourced for current session. You may need to source ${BCyan}$RUSTUP_CARGO_HOME/env${Color_Off} or open a new terminal."
+        else
+            error "rustup installation script ran, but $RUSTUP_CARGO_HOME/env not found."
+        fi
+    else
+        error "curl is required to install rustup. Please install curl."
+    fi
+else
+    step_info "Rust (rustc/cargo) already installed."
+    rustc --version
+    cargo --version
+fi
+
+
 info "--- Development Tools Installation Complete ---"

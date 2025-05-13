@@ -10,7 +10,7 @@ DOCKER_BASE_DIR="$HOME/homelab-docker"
 TEMPLATE_DIR="./docker-compose-templates"
 
 # List of services to set up (directories in the template folder)
-services="jellyfin-stack navidrome immich homeassistant" # Update this list
+services="jellyfin-stack navidrome immich homeassistant" 
 
 # Check if template directory exists
 if [ ! -d "$TEMPLATE_DIR" ]; then
